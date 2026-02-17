@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Control</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0d0d0f;
+      --bg-secondary: #16161a;
+      --bg-tertiary: #1e1e24;
+      --bg-hover: #252530;
+      --border: #2a2a35;
+      --text-primary: #ededef;
+      --text-secondary: #8a8a95;
+      --text-muted: #5c5c66;
+      --accent: #5e6ad2;
+      --accent-hover: #7c85e0;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --purple: #a78bfa;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+    }
+    
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: calc(100vh - 61px);
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    
+    /* Anton Status */
+    .status-card {
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+    
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .status-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .status-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .status-dot.idle {
+      background: var(--warning);
+      animation: none;
+    }
+    
+    .status-dot.offline {
+      background: var(--text-muted);
+      animation: none;
+    }
+    
+    .status-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .status-label {
+      color: var(--text-secondary);
+    }
+    
+    .status-value {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    
+    .current-task {
+      background: var(--bg-secondary);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    
+    .current-task-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    
+    /* Approvals */
+    .approval-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .approval-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .approval-item:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+    
+    .approval-item.urgent {
+      border-left: 3px solid var(--warning);
+    }
+    
+    .approval-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .approval-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    .approval-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    
+    .approval-btn {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .approval-btn.approve {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--success);
+    }
+    
+    .approval-btn.approve:hover {
+      background: rgba(74, 222, 128, 0.25);
+    }
+    
+    .approval-btn.reject {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--danger);
+    }
+    
+    .approval-btn.reject:hover {
+      background: rgba(248, 113, 113, 0.25);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+    
+    /* Main Content - Kanban */
+    .main {
+      padding: 20px;
+      overflow-x: auto;
+      background: var(--bg-primary);
+    }
+    
+    .kanban {
+      display: flex;
+      gap: 16px;
+      height: 100%;
+      min-width: max-content;
+    }
+    
+    .kanban-column {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    
+    .column-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .column-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .column-count {
+      background: var(--bg-tertiary);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    
+    .column-add {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .column-add:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    
+    .column-cards {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: grab;
+      transition: all 0.15s;
+    }
+    
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    
+    .card.dragging {
+      opacity: 0.5;
+    }
+    
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
+    .card-tag {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    
+    .tag-feature { background: rgba(94, 106, 210, 0.2); color: var(--accent); }
+    .tag-bug { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+    .tag-idea { background: rgba(167, 139, 250, 0.2); color: var(--purple); }
+    .tag-infra { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+    
+    .card-priority {
+      margin-left: auto;
+    }
+    
+    .priority-high { color: var(--danger); }
+    .priority-medium { color: var(--warning); }
+    .priority-low { color: var(--text-muted); }
+    
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+    }
+    
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🚀</div>
+      <span>Mission Control</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="exportData()">Export</button>
+      <button class="btn btn-primary" onclick="openModal()">+ New Task</button>
+    </div>
+  </header>
+  
+  <div class="layout">
+    <aside class="sidebar">
+      <!-- Anton Status -->
+      <section>
+        <div class="section-title">Anton Status</div>
+        <div class="status-card">
+          <div class="status-header">
+            <div class="status-avatar">🤖</div>
+            <div>
+              <div class="status-name">Anton</div>
+              <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Online</span>
+              </div>
+            </div>
+          </div>
+          <div class="status-content">
+            <div class="status-item">
+              <span class="status-label">Active Tasks</span>
+              <span class="status-value" id="activeTasks">0</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Completed Today</span>
+              <span class="status-value" id="completedToday">0</span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Last Activity</span>
+              <span class="status-value" id="lastActivity">Just now</span>
+            </div>
+            <div class="current-task" id="currentTaskContainer" style="display: none;">
+              <div class="current-task-label">Currently Working On</div>
+              <div id="currentTask"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Approval Portal -->
+      <section>
+        <div class="section-title">Pending Approvals</div>
+        <div class="approval-list" id="approvalList">
+          <div class="empty-state">No pending approvals</div>
+        </div>
+      </section>
+    </aside>
+    
+    <main class="main">
+      <div class="kanban" id="kanban">
+        <!-- Columns rendered by JS -->
+      </div>
+    </main>
+  </div>
+  
+  <!-- New Task Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">Create New Task</div>
+      <form id="taskForm" onsubmit="createTask(event)">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="taskTitle" required placeholder="What needs to be done?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" id="taskDesc" placeholder="Add details..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="taskType">
+            <option value="feature">Feature</option>
+            <option value="bug">Bug</option>
+            <option value="idea">Idea</option>
+            <option value="infra">Infrastructure</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="taskPriority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Requires Approval</label>
+          <select class="form-select" id="taskApproval">
+            <option value="no">No - Anton can proceed</option>
+            <option value="yes">Yes - Needs my approval</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    // State
+    const STORAGE_KEY = 'mission-control-data';
+    
+    const defaultState = {
+      columns: [
+        { id: 'backlog', title: 'Backlog', cards: [] },
+        { id: 'todo', title: 'To Do', cards: [] },
+        { id: 'in-progress', title: 'In Progress', cards: [] },
+        { id: 'review', title: 'Review', cards: [] },
+        { id: 'done', title: 'Done', cards: [] }
+      ],
+      approvals: [],
+      antonStatus: {
+        state: 'online',
+        currentTask: null,
+        lastActivity: new Date().toISOString(),
+        completedToday: 0
+      }
+    };
+    
+    let state = loadState();
+    
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
+      return { ...defaultState };
+    }
+    
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+    
+    // Render functions
+    function render() {
+      renderKanban();
+      renderApprovals();
+      renderStatus();
+      saveState();
+    }
+    
+    function renderKanban() {
+      const kanban = document.getElementById('kanban');
+      kanban.innerHTML = state.columns.map(column => `
+        <div class="kanban-column" data-column="${column.id}">
+          <div class="column-header">
+            <div class="column-title">
+              ${column.title}
+              <span class="column-count">${column.cards.length}</span>
+            </div>
+            <button class="column-add" onclick="openModal('${column.id}')">+</button>
+          </div>
+          <div class="column-cards" 
+               ondragover="handleDragOver(event)" 
+               ondrop="handleDrop(event, '${column.id}')">
+            ${column.cards.map(card => renderCard(card)).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function renderCard(card) {
+      const priorityIcon = {
+        high: '🔴',
+        medium: '🟡',
+        low: '⚪'
+      };
+      
+      return `
+        <div class="card" 
+             draggable="true" 
+             data-id="${card.id}"
+             ondragstart="handleDragStart(event)"
+             ondragend="handleDragEnd(event)"
+             onclick="openCardDetail('${card.id}')">
+          <div class="card-title">${escapeHtml(card.title)}</div>
+          <div class="card-meta">
+            <span class="card-tag tag-${card.type}">${card.type}</span>
+            <span class="card-priority priority-${card.priority}">${priorityIcon[card.priority]}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    function renderApprovals() {
+      const list = document.getElementById('approvalList');
+      
+      if (state.approvals.length === 0) {
+        list.innerHTML = '<div class="empty-state">No pending approvals ✓</div>';
+        return;
+      }
+      
+      list.innerHTML = state.approvals.map(item => `
+        <div class="approval-item ${item.urgent ? 'urgent' : ''}">
+          <div class="approval-title">${escapeHtml(item.title)}</div>
+          <div class="approval-meta">${item.description || 'Awaiting your decision'}</div>
+          <div class="approval-actions">
+            <button class="approval-btn approve" onclick="handleApproval('${item.id}', true)">✓ Approve</button>
+            <button class="approval-btn reject" onclick="handleApproval('${item.id}', false)">✗ Reject</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function renderStatus() {
+      const status = state.antonStatus;
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const activeTasks = document.getElementById('activeTasks');
+      const completedToday = document.getElementById('completedToday');
+      const lastActivity = document.getElementById('lastActivity');
+      const currentTaskContainer = document.getElementById('currentTaskContainer');
+      const currentTask = document.getElementById('currentTask');
+      
+      dot.className = 'status-dot ' + (status.state === 'online' ? '' : status.state);
+      text.textContent = status.state.charAt(0).toUpperCase() + status.state.slice(1);
+      
+      const inProgressColumn = state.columns.find(c => c.id === 'in-progress');
+      activeTasks.textContent = inProgressColumn ? inProgressColumn.cards.length : 0;
+      completedToday.textContent = status.completedToday;
+      
+      const lastActivityDate = new Date(status.lastActivity);
+      const now = new Date();
+      const diffMinutes = Math.floor((now - lastActivityDate) / 60000);
+      
+      if (diffMinutes < 1) {
+        lastActivity.textContent = 'Just now';
+      } else if (diffMinutes < 60) {
+        lastActivity.textContent = `${diffMinutes}m ago`;
+      } else {
+        lastActivity.textContent = lastActivityDate.toLocaleTimeString();
+      }
+      
+      if (status.currentTask) {
+        currentTaskContainer.style.display = 'block';
+        currentTask.textContent = status.currentTask;
+      } else if (inProgressColumn && inProgressColumn.cards.length > 0) {
+        currentTaskContainer.style.display = 'block';
+        currentTask.textContent = inProgressColumn.cards[0].title;
+      } else {
+        currentTaskContainer.style.display = 'none';
+      }
+    }
+    
+    // Drag and drop
+    let draggedCard = null;
+    
+    function handleDragStart(e) {
+      draggedCard = e.target;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedCard = null;
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    function handleDrop(e, columnId) {
+      e.preventDefault();
+      if (!draggedCard) return;
+      
+      const cardId = draggedCard.dataset.id;
+      
+      // Find and remove card from current column
+      let card = null;
+      for (const column of state.columns) {
+        const index = column.cards.findIndex(c => c.id === cardId);
+        if (index !== -1) {
+          card = column.cards.splice(index, 1)[0];
+          break;
+        }
+      }
+      
+      if (card) {
+        // Add to new column
+        const targetColumn = state.columns.find(c => c.id === columnId);
+        if (targetColumn) {
+          targetColumn.cards.push(card);
+          
+          // Update stats if moved to done
+          if (columnId === 'done') {
+            state.antonStatus.completedToday++;
+          }
+          
+          state.antonStatus.lastActivity = new Date().toISOString();
+        }
+      }
+      
+      render();
+    }
+    
+    // Modal
+    let modalTargetColumn = 'backlog';
+    
+    function openModal(columnId = 'backlog') {
+      modalTargetColumn = columnId;
+      document.getElementById('modalOverlay').classList.add('active');
+      document.getElementById('taskTitle').focus();
+    }
+    
+    function closeModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('modalOverlay').classList.remove('active');
+      document.getElementById('taskForm').reset();
+    }
+    
+    function createTask(e) {
+      e.preventDefault();
+      
+      const title = document.getElementById('taskTitle').value.trim();
+      const desc = document.getElementById('taskDesc').value.trim();
+      const type = document.getElementById('taskType').value;
+      const priority = document.getElementById('taskPriority').value;
+      const needsApproval = document.getElementById('taskApproval').value === 'yes';
+      
+      if (!title) return;
+      
+      const card = {
+        id: generateId(),
+        title,
+        description: desc,
+        type,
+        priority,
+        createdAt: new Date().toISOString()
+      };
+      
+      if (needsApproval) {
+        state.approvals.push({
+          id: generateId(),
+          cardId: card.id,
+          title: card.title,
+          description: `New ${type} task: ${desc || title}`,
+          urgent: priority === 'high',
+          card
+        });
+      } else {
+        const column = state.columns.find(c => c.id === modalTargetColumn);
+        if (column) {
+          column.cards.push(card);
+        }
+      }
+      
+      state.antonStatus.lastActivity = new Date().toISOString();
+      closeModal();
+      render();
+    }
+    
+    function handleApproval(approvalId, approved) {
+      const index = state.approvals.findIndex(a => a.id === approvalId);
+      if (index === -1) return;
+      
+      const approval = state.approvals[index];
+      state.approvals.splice(index, 1);
+      
+      if (approved && approval.card) {
+        const backlog = state.columns.find(c => c.id === 'backlog');
+        if (backlog) {
+          backlog.cards.push(approval.card);
+        }
+      }
+      
+      state.antonStatus.lastActivity = new Date().toISOString();
+      render();
+    }
+    
+    function openCardDetail(cardId) {
+      // Could expand to show full detail modal
+      console.log('Open card:', cardId);
+    }
+    
+    function exportData() {
+      const dataStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mission-control-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Initialize
+    render();
+    
+    // Update status periodically
+    setInterval(renderStatus, 30000);
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        openModal();
+      }
+    });
+  </script>
+</body>
+</html>
