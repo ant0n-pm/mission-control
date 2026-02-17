@@ -1,0 +1,13 @@
+{
+  "state": "working",
+  "currentTask": "Adding live status & token tracking to Mission Control",
+  "lastActivity": "2026-02-17T23:08:00Z",
+  "tokens": {
+    "in": 10,
+    "out": 191,
+    "context": 42000,
+    "contextMax": 400000
+  },
+  "session": "agent:main:main",
+  "updatedAt": "2026-02-17T23:08:00Z"
+}

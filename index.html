@@ -193,6 +193,74 @@
     .status-dot.idle { background: var(--warning); }
     .status-dot.offline { background: var(--text-muted); }
     
+    .status-details {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .status-task {
+      background: var(--bg-hover);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .status-task-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    
+    .status-task-text {
+      font-size: 12px;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+    
+    .status-tokens {
+      margin-bottom: 8px;
+    }
+    
+    .token-bar {
+      height: 4px;
+      background: var(--bg-hover);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    
+    .token-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    
+    .token-stats {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    
+    .token-io {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    
+    .token-io span:first-child { color: var(--success); }
+    .token-io span:last-child { color: var(--accent); }
+    
+    .status-updated {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+    
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.7; transform: scale(0.95); }
@@ -802,9 +870,28 @@
             <div class="status-name">Anton</div>
             <div class="status-state">
               <div class="status-dot" id="statusDot"></div>
-              <span id="statusText">Online</span>
+              <span id="statusText">Connecting...</span>
             </div>
           </div>
+        </div>
+        <div class="status-details" id="statusDetails">
+          <div class="status-task" id="statusTask" style="display: none;">
+            <div class="status-task-label">Working on</div>
+            <div class="status-task-text" id="statusTaskText"></div>
+          </div>
+          <div class="status-tokens">
+            <div class="token-bar">
+              <div class="token-bar-fill" id="tokenBarFill" style="width: 0%"></div>
+            </div>
+            <div class="token-stats">
+              <span id="tokenContext">0k</span> / <span id="tokenMax">400k</span> context
+            </div>
+            <div class="token-io">
+              <span>↓ <span id="tokenIn">0</span></span>
+              <span>↑ <span id="tokenOut">0</span></span>
+            </div>
+          </div>
+          <div class="status-updated" id="statusUpdated">Last sync: --</div>
         </div>
       </div>
     </aside>
@@ -1140,7 +1227,6 @@
       renderKanban();
       renderApprovals();
       renderIdeas();
-      renderStatus();
       updateProjectSelects();
       saveState();
     }
@@ -1310,19 +1396,7 @@
       `).join('');
     }
     
-    function renderStatus() {
-      const dot = document.getElementById('statusDot');
-      const text = document.getElementById('statusText');
-      const inProgress = state.tasks['in-progress'].length;
-      
-      if (inProgress > 0) {
-        dot.className = 'status-dot working';
-        text.textContent = 'Working';
-      } else {
-        dot.className = 'status-dot';
-        text.textContent = 'Online';
-      }
-    }
+    // Status is now fetched from status.json - see updateStatusUI()
     
     function updateProjectSelects() {
       const options = '<option value="">No Project</option>' + 
@@ -1548,6 +1622,75 @@
         openTaskModal();
       }
     });
+    
+    // Anton Status Sync
+    const STATUS_URL = 'https://raw.githubusercontent.com/ant0n-pm/mission-control/main/status.json';
+    let antonStatus = { state: 'offline', currentTask: null, tokens: null, updatedAt: null };
+    
+    async function fetchAntonStatus() {
+      try {
+        const res = await fetch(STATUS_URL + '?t=' + Date.now()); // cache bust
+        if (!res.ok) throw new Error('Failed to fetch');
+        antonStatus = await res.json();
+        updateStatusUI();
+      } catch (e) {
+        console.warn('Status fetch failed:', e);
+        antonStatus.state = 'offline';
+        updateStatusUI();
+      }
+    }
+    
+    function updateStatusUI() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const taskEl = document.getElementById('statusTask');
+      const taskText = document.getElementById('statusTaskText');
+      const tokenBar = document.getElementById('tokenBarFill');
+      const tokenContext = document.getElementById('tokenContext');
+      const tokenMax = document.getElementById('tokenMax');
+      const tokenIn = document.getElementById('tokenIn');
+      const tokenOut = document.getElementById('tokenOut');
+      const updated = document.getElementById('statusUpdated');
+      
+      // State
+      const stateMap = {
+        'working': { dot: 'working', text: 'Working' },
+        'online': { dot: '', text: 'Online' },
+        'idle': { dot: 'idle', text: 'Idle' },
+        'offline': { dot: 'offline', text: 'Offline' }
+      };
+      const s = stateMap[antonStatus.state] || stateMap.offline;
+      dot.className = 'status-dot ' + s.dot;
+      text.textContent = s.text;
+      
+      // Current task
+      if (antonStatus.currentTask && antonStatus.state === 'working') {
+        taskEl.style.display = 'block';
+        taskText.textContent = antonStatus.currentTask;
+      } else {
+        taskEl.style.display = 'none';
+      }
+      
+      // Tokens
+      if (antonStatus.tokens) {
+        const t = antonStatus.tokens;
+        const pct = Math.min(100, (t.context / t.contextMax) * 100);
+        tokenBar.style.width = pct + '%';
+        tokenContext.textContent = Math.round(t.context / 1000) + 'k';
+        tokenMax.textContent = Math.round(t.contextMax / 1000) + 'k';
+        tokenIn.textContent = t.in.toLocaleString();
+        tokenOut.textContent = t.out.toLocaleString();
+      }
+      
+      // Last sync
+      if (antonStatus.updatedAt) {
+        updated.textContent = 'Last sync: ' + timeAgo(antonStatus.updatedAt);
+      }
+    }
+    
+    // Poll status every 30 seconds
+    fetchAntonStatus();
+    setInterval(fetchAntonStatus, 30000);
     
     // Init
     render();
